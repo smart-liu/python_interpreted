@@ -1,0 +1,171 @@
+异常处理abort函数:
+	from flask import abort
+	
+	abort(403)  -->传入状态码
+
+自定义异常处理:
+	访问不存在的路由,显示404错误
+	@app.errorhandler(404)
+	def handler_404(e):
+		return "发生了404错误: %s" % e
+
+响应response:
+	
+	1.响应体 状态码 响应头 -->写在return 后面
+
+		return "响应体", 200, {"city": "深圳"}/[("city","深圳"), ("","")}
+
+	2.自己构造响应对象
+	    from flask import make_response
+	    def index():
+		resp = make_response("响应体")
+		resp.status = "200" -->状态码
+		resp.headers["city"] = "深圳"
+		return resp
+
+返回json字符串:
+	def index():
+		p = {"name":"zhangsan", "age":18}
+		# return json.dumps(p)
+	
+		return jsonify(p) --->自动转换数据为json字符串, 并且设置响应头Content-Type为application/json
+
+redirect用法:
+	from flask import redirect
+	def login():
+		redirect(url_for("index"))
+
+	
+设置和读取cookie:
+	1.先创建response对象:
+	resp = make_response("index page")
+
+	2.通过响应对象设置cookie
+	resp.set-cookie("name","zhangsan")
+
+	3.设置有效期
+	resp.set-cookie("name","zhangsan", max_age=3600)
+
+	4.获取cookie
+	from flask import request
+	name = request.cookies.get("name")
+
+	5.删除cookie(只是修改了cookie的有效期)
+	resp.delete_cookie("name")
+
+
+session的使用:
+	from flask import session
+	1.设置secret_key(随意设置字符串,用来给session_id(cookie))
+	app.config["SECRET_KEY"] = "sadsafshw523756yhsfgaddcs"
+	
+	2.使用session对象设置session
+	session["name"] = "python"
+
+	3.取出session值
+	name = session.get("name")
+
+假如客户端关闭了cookie功能,该怎么解决这个问题?
+
+
+
+请求上下文和应用上下文:
+	1.请求上下文:	
+	request和session都属于请求上下文
+
+	**相当于开一个线程的全局变量,每次请求时request都不一样,但是都能取到想要的值,
+	是因为:每次的请求都会开一个线程,每一个线程在request里都对应一个字典
+	{thread_1:{},thread_2:{}}
+	
+	2.应用上下文:
+	current_app属于应用上下文
+
+
+钩子(相当于Django的中间件,用装饰器实现):
+	1.@app.before_first_request  -->在第一次请求之前被调用
+	
+	2.@app.before_request -->在请求之前被调用
+	
+	3.@app.after_request  -->在每次请求之后并且没有出现异常时被调用
+
+	4.app.teardown_request  -->在每次请求之后且无论有没有异常都会被调用
+
+
+Manager类的使用:
+	from flask_script import Manager
+	
+	app = Flask(__name__)
+	manager = Manager(app)
+	
+	manager.run()
+
+	
+模板:
+	from flask import render_template
+
+	return render_tempalte("index.html", name="python", age=18)
+	或者:	
+	context = {"name":"python", "age":18}
+	return render_tempalte("index.html", **context)
+
+	模板变量:
+		{{变量名}}
+		字符串相加:{{变量1 + 变量2}}
+
+	    传入字典变量使用方法:
+		1.{{字典.["key"]}}
+		2.{{字典.key}}
+
+过滤器:
+	{{变量名 | trim | upper }}
+	{{变量名 | trim | first }}
+	{{变量名 | trim | length }}
+
+
+自定义过滤器:
+	1.def filter_list(li)
+		return li[::2]
+	app.add_template_filter(filter_list, "过滤器名")
+
+	2.@app.template_filter("过滤器名")
+	  def myfilter(str):
+		return str[::-1]
+
+创建表单:
+	from flask_wtf import FlaskForm
+	from wtforms import StringField,PasswordField,SubmitField
+	from wtforms.validators import DataRequired,equal_to
+
+	class LoginForm(FlaskForm):
+    		username = StringField(label="用户名:",validators=[DataRequired()])
+    		password = PasswordField(label="密码:",validators=[DataRequired()])
+    		password1 = PasswordField(label="确认密码:",validators=[DataRequired(),equal_to("password")])
+    		submit = SubmitField(label="提交")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

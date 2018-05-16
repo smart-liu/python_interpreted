@@ -1,0 +1,189 @@
+开发完成视图
+编写单元测试
+自己测试
+
+编写接口文档
+	1.图片验证码接口
+	功能描述: 前端通过访问该接口,可以获取验证码图片
+	访问接口url: /api/v1_0/image_codes/<图片验证码编号image_code_id>
+	
+	访问方式: GET
+	
+	传入参数:
+		格式: url  (查询字符串  json xml 表单格式)
+
+		参数名        参数类型      是否必传   说明
+		image_code_id  字符串         是       图片的验证码编号
+	
+	返回值:
+		格式: 正常:图片  异常: json数据
+
+		参数名      参数类型     是否必传   说明
+		errno         整数	  是	    错误编码
+		errmsg 	    字符串类型     是	    错误内容
+		例如:  {"errno": "4001", "errmsg": "保存验证码失败"}
+
+
+云通讯的使用(发送短信第三方平台): www.xuntongxun.com
+
+
+图片存储(文件)
+
+	图片存储量大,服务器空间已满
+	图片存储的机器宕机, 图片有可能丢失或损坏,没有备份
+
+	用户A  a.jpg
+	用户B  b.jpg
+	**不同名的同一份资源保存多次,造成资源浪费
+
+	用户A  a.jpg
+	用户B  b.jpg
+	**同名的不同资源,后保存的会覆盖掉之前保存的同名资源
+	
+	解决方案一:自己搭建文件存储系统   开源软件  FashDFS   HDF
+	解决方案二:租用第三方的文件存储系统  七牛云
+
+
+链接服务器:
+	ssh s8029@101.200.171.170
+
+从本地拷贝数据到服务器:
+	scp ./file_name s8029@101.200.171.170:~
+
+
+
+登录错误 超过次数 封ip
+
+	选用redis记录用户登录的错误次数
+
+	没错误一次,redis中的数据加1
+	达到最大限制次数时,不在进行用户名密码判断, 使用验证码
+
+	每个用户单独维护一条记录,保证数据唯一性
+	'access_%s' % user_ip: string(次数)
+
+
+redis指令:
+	http://redisdoc.com/index.html
+	redis_obj.get("键名", 值)
+	redis_obj.set("键名")
+	redis_obj.expire("键名", 过期时间(int类型))
+	redis_obj.setex("键名", 过期时间(int类型), 值)
+
+	redis_obj.incr("键名")
+	incr a  --> 把字符串a的值加一,如果a为None,为自动初始化为0
+
+
+csrf校验的请求类型
+	POST DELETE PUT
+
+
+
+$(this).ajaxSubmit({}):
+	**需要引入jQuery.form.js前端插件,该插件基于jQuery文件
+	**当后台使用的是request.files接收form表单中的数据
+        **可以使用$.ajaxForm方法，能自动传送表单中的数据，还能补充完整的ajax请求方式
+	**结构中不需要data参数,也不需要指明发送数据的类型,但需要contentType指定从后台接收过来的数据
+	**需要关心的字段:url,type,dataType,header,success
+
+
+前端模板:art-template(Tencent开源模板)
+	http://aui.github.io/art-template
+	**引入templates.js前端模板
+	**在前端html页面写模板语言
+	**<script type="text/html" id="模板标识"></script>
+	**在js调用模板函数,拿到模板html,然后注入到相应html页面
+	**emplate(param1, param2)参数1模板标识,参数2传入数据
+
+
+redis缓存数据,减少mysql数据库的访问压力:
+    核心思想:
+	先尝试从redis中获取数据
+	如果redis中有,则直接返回
+	如果redis中没有,则从mysql中进行查询,将查询的结果在redis中保存一份,将结果返回
+
+    缓存数据的同步问题:
+	mysql的数据与redis中的数据同步一致问题:
+	1.在修改mysql数据的同时,处理缓存redis中数据(删除缓存数据)
+	2.对缓存数据设置有效期
+
+
+控制登录页面输入账号密码次数:
+	**使用redis存储每个ip地址输入的次数
+	**错误次数加一,次数大于5,禁止登录5分钟
+
+
+
+form表单中一次性提取input中的值:
+	$("form_info").serializeArray() ---> 返回一个列表,列表中为字典,以键值对的方式提取name和value的值
+	格式为[{name:1, value:1},{name:2, value:2},{},{}]
+
+	$("form_info").serializeArray().map(function(x){house_data[x.name]=x.value}) -->会把name中的值作为键,value中的值作为值
+
+
+celery框架(生产者消费者模型)
+	客户端: 
+		发布任务的一方
+		@celery_app.task
+		def send_sms():
+			pass
+	
+		发布任务: send_sms.delay()
+		在想要获取结果的时候从backend中自己去读取结果数据
+		
+
+	任务队列(broker):
+		任务名字send_sms
+		存储任务方式
+			RabbitMQ Message Queue 消息队列
+			redis
+
+	任务处理者(worker):
+		@celery_app.task
+		def send_sms():
+			要实现任务的详细代码
+	
+		多任务处理:进程(默认, 进程池), 协程(greenlet, gevent)
+
+		启动: celery -A celery代码的启动文件 worker -l info
+
+	保存结果数据(backend):
+		redis数据库
+
+		worker任务处理完,将结果保存在redis数据库中,
+		想要获取结果的时候从backend中自己去读取结果数据
+	
+
+前端轮播图:
+	插件实现:jQuery.swiper.js			
+	
+	 var mySwiper = new Swiper ('.swiper-container', {
+                loop: true,
+                autoplay: 2000,
+                autoplayDisableOnInteraction: false,
+                pagination: '.swiper-pagination',
+                paginationType: 'fraction'
+            });
+
+
+redis事务:
+	创建管道: redis.pipeline()
+	开启事务: pipeline.multi()
+	执行事务: pipeline.execute()
+
+
+document.location.search --> 获取当前页面url ?以及后面的参数,以字符串的方式返回
+可以使用substr(1)去除?
+
+
+
+
+redis
+from参数
+
+
+
+
+
+
+

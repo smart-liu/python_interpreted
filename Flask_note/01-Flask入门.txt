@@ -1,0 +1,148 @@
+创建虚拟环境:
+	mkvirtualenv flask_py3 -p python3(指定python版本)
+	flask对Python2的支持比较好
+删除虚拟环境:
+	rmvirtualenv flask_py3
+
+__name__理解:
+	1.当我们使用 python hello.py启动__name__代表__main__
+	2.当我们使用 python demo.py 里面导入了hello.py里面的app
+	  这个时候__name__代表的hello
+	3.flask就会认为hello所在的目录就是我们的项目目录,进而会在这个目录寻找
+	  到静态文件目录static和模板目录templates
+
+
+安装flask包(0.10.1版本):
+	pip install flask==0.10.1
+
+将虚拟环境个的所有包都冻结到文件中:
+	pip freeze > requirements.txt
+
+将所有依赖包安装到虚拟环境中:
+	pip install -r requirements.txt
+
+
+创建Flask应用对象:
+	from flask import Flask, current_app(和app对象相同)
+	APP= Flask(__name__,static_url_path="/python", static_folder="static", templates_holder="templates")
+	__name__:在当前文件目录下寻找根目录
+	static_url_path: 控制访问静态资源url的前缀, 默认为static
+	
+
+
+视图函数:
+    通过route装饰器,将url路径与视图函数绑定到一起
+	@app.route("/)
+	def hello():
+		通过return 字符串返回响应信息
+		return "hello world!"
+	if __name__ == "__main__":
+		通过app.run()让flask运行起来
+		app.run()
+		指定ip和端口
+		app.run(host="0.0.0.0",port=5001)
+
+
+为flask添加配置参数:
+	app.config.from_pyfile("MyConfig.cfg")
+	在当前目录创建MyConfig.cfg文件,配置相关参数
+
+通过对象的方式配置参数:
+	class MyConfig(object):
+		"""配置信息"""
+		DEBUG = True
+	app.config.from_pyfile(MyConfig)
+	
+
+	或者直接在app.run(debug=True)
+
+
+	获取配置类里的值:
+	app.config.get("DEBUG")
+
+
+路由:
+	app.url_map  查看所有路由
+
+同一个路由装饰不同的函数:
+	哪个函数在上面就执行哪个函数
+
+
+method限制访问方式:
+	app.route("/index", methods=["POST","GET"])
+
+url_for反解析:
+	from flask import url_for
+	return <a href="%s">redirect</a> % url_for("函数名")
+
+路由参数:
+	1.把/后面所有的内容当做参数
+	@app.route("/<name>")
+	def index(name):
+		return "hello %s" % name
+
+	2.指定的匹配类型参数
+	@app.route("/<int:id>")
+	@app.route("/<float:id>")
+	只匹配int类型的值,参数名为id
+	
+	3.自定义正则和中间函数to_python/to_url
+class myConverter(BaseConverter):
+    def __init__(self, url_map, *args):
+        # 完成父类的初始化
+        super(myConverter, self).__init__(url_map)
+        # 将正则表达式赋值给regx数据
+        self.regex = args[0] #'\d{3}'
+
+    def to_python(self, value):  --->正则匹配到的参数先传递给to_python函数的value,再传递给要执行的函数
+
+        print u"拦截 to_python  value=%s"%value
+        # 可以的拦截自己处理，但是一般不这么做
+        return value
+
+    def to_url(self, value):    --->执行url_for进行地址转换传递的参数先传递给to_url然后传递给要执行的函数
+
+        print u"拦截to_url  value%s"%value
+        return value
+
+app.url_map.converters["re"] = myConverter
+# re和我们自定义的类是如何绑定到一起的。
+# re('\d{3}') ===> myConverter('\d{3}')  ===> self.regx = '\d{3}' 其余的交给这个类给我们处理就好
+
+@app.route("/get_num/<re('\d{3}'):num>")
+def get_num(num):
+    return "number is %s" % num
+	
+
+request对象的用法:
+	from flask import request
+	使用方法和Django类似
+	1.data(任意请求):
+	request.data.get("name")
+
+	2.args(get请求):
+	request.args.get("name")取出
+
+	3.form(post请求):
+	request.from.get("name")
+
+	4.file:
+	resp = request.files.get("img")
+	if resp:
+	    resp.save("./file_img.png")
+	    return "success"
+	return "faild"
+	
+
+
+
+
+
+
+
+
+
+
+
+
+

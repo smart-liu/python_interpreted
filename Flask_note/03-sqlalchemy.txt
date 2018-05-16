@@ -1,0 +1,172 @@
+模板宏的使用:
+	相当于定义了一个函数,这个函数可以在其他位置使用
+	1.定义:
+	{% macro input() %}
+		# 宏的代码块
+		<input type="text" name="" vlaue="" size="">
+	{% endmacro %}
+
+	2.调用:
+	{{ input() }}
+
+	3.传参
+	{% macro input(type="text", name, value="", size="30") %}
+		# 宏的代码块
+		<input type="{{type}}" name="{{name}}" vlaue="{{value}}" size="{{size}}">
+	{% endmacro %}
+	
+	{{input(name="text",size="40")}}
+
+
+	4.不同模板导入宏
+	{% import "macro.html" as M %}
+	使用:
+	     {{ M.input(name="text",size="40") }}
+	
+
+模板中特殊变量的使用:
+	1.config对象
+		例如: {{config.DEBUG}}
+	2.request对象
+		{{ request.form.get }}
+	3.url_for方法
+	4.get_flashed_messages方法(相当于是一个容器,视图中可以用flash传入数据)
+		视图中:
+		from flask import flash
+		flash("hello world")
+	
+		模板中:	
+		{% for messages in get_flashed_messages %}
+		{{ messages }}
+
+
+数据库的使用:
+	
+	1.安装flask对接mysql的依赖包:
+	pip install flask-sqlalchemy
+
+	安装链接mysql的依赖包:
+	pip install flask-mysqldb或者pip install 
+	
+	2.flask中的配置
+	a)from flask_sqlalchemy import sqlalchemy
+
+	b)链接数据库
+	app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://python:mysql@127.0.0.1:3306/flask_test"
+
+	c)让sqlalchemy跟踪数据库的修改
+	app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+
+	d)让sqlalchemy显示执行的sql语句
+	app.config["SQLALCHEMY_ECHO"] = True
+
+	e)创建sqlalchemy的数据库链接对象
+	db = sqlalchemy(app)
+
+	3.创建表
+	class Role(db.Model):
+		__tablename__ = "tbl_roles"  # 指定表名
+		id = db.Column(db.Integer, primary_key=True)  #设置主键,默认自增
+		name = db.column(db.String(64), unique=True)  #最大长度64, 唯一
+		users = db.relationship("User", backref="role")
+		** 设置两个表的关系,backref方便多对一的查询
+		例如:user.role 可以查询出一个role对象
+		     但是user.role_id就只能查出id
+
+	class User(db.Model):
+		__tablename__ = "tbl_users"
+		id = db.Column(db.Integer, primary_key=True)
+		name = db.Column(db.String(64), unique=True)
+		email = db.Column(db.String(128), unique=True)
+		password = db.Column(db.String(128))
+		role_id = db.Column(db.Integer, db.ForeignKey("tbl_roles.id"))  # 指明外键
+	
+	删除该数据库下的所有表
+	db.drop_all()
+	创建所有的表
+	db.create_all()
+
+数据表的操作:
+	1.创建对象:
+	role1 = Role(name="zhangsan")
+	2.交代任务(更新数据要通过数据库会话session完成)
+	db.session.add(role1)
+	3.提交任务
+	db.session.commit()
+
+	
+	创建多条记录
+	db.session.add_all([role1, role2, role3, role4])
+
+
+数据查询:
+	1.查询所有记录(返回值为列表对象):
+	Role.query.all()
+	2.查询单个记录--->不存在会结果为None类型(只能通过id查询)
+	Role.query.get(2)
+	Role.query.first() -->查出表中第一个结果
+	
+	3.查询数目
+	Role.query.count()
+
+	4.过滤(filter_by)
+	User.query.filter_by(name="zhangsan").all() -->name="zahngsan"的所有记录
+	   多条件
+		User.query.filter_by(name="zhangsan", id=2).all()
+		User.query.filter_by(name="zhangsan", id=2).first()
+	
+	5.filter
+	User.query.filter(User.name=="zhangsan").all()
+	   多条件--与/或/反
+		from sqlalchemy import and_ , or_ , not_
+		User.query.filter(and_(User.name=="zhangsan", User.email.endwith("163.com")))
+		
+		User.query.filter(or_(User.name=="zhangsan", User.email.endwith("163.com")))
+
+		User.query.filter(not_(User.name=="zhangsan", User.email.endwith("163.com")))
+
+
+	6.排序
+	User.query.order_by(User.id).all()
+	降序:
+	User.query.order_by(User.id.desc()).all()
+
+	7.关联查询
+		在一中的表中设置有:users = db.relationship("User", backref="role")
+	    多查一:
+		user1 = User.query.get(1)
+		直接查询:Role.query.get(user1.role_id)
+		关联查询:user.role
+
+	    一查多:
+		role1 = Role.query.get(1)
+		role1.users
+
+	8.更新
+	name位li的改为张
+	user = User.query.get(1)
+	user.name = "zhang"	
+	或者:
+	User.query.filter_by(name="li").update({"name":"zhang"})
+	更新完之后还要commit
+	db.session.commit()
+
+	9.删除
+	user = User.query.get(1)
+	db.session.delete(user)
+	db.session.commit()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

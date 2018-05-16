@@ -1,0 +1,9 @@
+数据库迁移:
+	python manage.py db init 
+	python manage.py db migrate
+	python manage.py db upgrade
+
+运行:
+	python manage.py runserver
+
+	

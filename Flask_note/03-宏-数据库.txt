@@ -1,0 +1,99 @@
+模板宏的使用:
+	相当于定义了一个函数,这个函数可以在其他位置使用
+	1.定义:
+	{% macro input() %}
+		# 宏的代码块
+		<input type="text" name="" vlaue="" size="">
+	{% endmacro %}
+
+	2.调用:
+	{{ input() }}
+
+	3.传参
+	{% macro input(type="text", name, value="", size="30") %}
+		# 宏的代码块
+		<input type="{{type}}" name="{{name}}" vlaue="{{value}}" size="{{size}}">
+	{% endmacro %}
+	
+	{{input(name="text",size="40")}}
+
+
+	4.不同模板导入宏
+	{% import "macro.html" as M %}
+	使用:
+	     {{ M.input(name="text",size="40") }}
+	
+
+模板中特殊变量的使用:
+	1.config对象
+		例如: {{config.DEBUG}}
+	2.request对象
+		{{ request.form.get }}
+	3.url_for方法
+	4.get_flashed_messages方法(相当于是一个容器,视图中可以用flash传入数据)
+		视图中:
+		from flask import flash
+		flash("hello world")
+	
+		模板中:	
+		{% for messages in get_flashed_messages %}
+		{{ messages }}
+
+
+数据库的使用:
+	
+	1.安装flask对接mysql的依赖包:
+	pip install flask-mysqlalchemy
+	安装链接mysql的依赖包:
+	pip install flask-mysqldb或者pip install 
+	
+	2.flask中的配置
+	from flask_sqlalchemy import sqlalchemy
+	链接数据库
+	app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://python:mysql@127.0.0.1:3306/flask_test"
+	让sqlalchemy跟踪数据库的修改
+	app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+	让sqlalchemy显示执行的sql语句
+	app.config["SQLALCHEMY_ECHO"] = True
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
