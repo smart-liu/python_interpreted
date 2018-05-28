@@ -1,0 +1,179 @@
+mongodb安装:
+	sudo apt-get install mongodb-org
+	sudo service mongod start/sudo mongo --config /etc/mongod.conf
+
+	1.首次启动服务sudo mongod(报错,表示默认的存储数据目录 /data/db 不存在)
+		sudo mkdir -p /data/db
+		sudo chmod 777 /data/db
+	2.再次启动sudo mongod
+	    解决两个警告:
+		a).sudo su
+		   sudo echo "never" > /sys/kernel/mm/transparent_hugepage/enabled
+		   sudo echo "never" >  /sys/kernel/mm/transparent_hugepage/defrag
+
+		b).# 打开 相关配置文件：
+		   root@ubuntu:~# vi /etc/security/limits.conf
+		   # 在打开的 文件最下方，添加，然后保存退出
+		   mongod  soft  nofile  64000
+		   mongod  hard  nofile  64000
+		   mongod  soft  nproc  32000
+		   mongod  hard  nproc  32000
+		
+	3.再次启动
+		sudo mongod
+
+卸载MongoDB
+	1.停止MongoDB服务
+
+		sudo service mongod stop
+
+	2.删除软件包
+
+		sudo apt-get purge mongodb-org*
+
+	3.删除数据目录
+
+		sudo rm -r /var/log/mongodb
+		sudo rm -r /var/lib/mongodb
+
+
+
+恢复和备份
+	恢复:sudo mongorestore -d test --dir Desktop/test1
+	备份:sudo mongodump -d test -o Desktop/test1
+
+
+mongodb插入数据
+	db.collecion.insert({}) 插入数据，_id存在就报错
+	db.collection.save({}) 插入数据，_id存在会更新
+
+mongodb的更新操作
+	db.test1000.update({name:"xiaowang"},{name:"xiaozhao"})
+	把name为xiaowang的数据替换为{name:"xiaozhao"}
+	db.test1000.update({name:"xiaohong"},{$set:{name:"xiaozhang"}})
+	把name为xiaowang的数据name的值更新为xiaozhang
+	db.test1000.update({name:"xiaozhang"},{$set:{name:"xiaohong"}},{multi:true})
+	{multi:true}达到更新多条的目的
+
+mongodb删除
+	db.test1000.remove({name:"xiaohong"},{justOne:true})
+	默认情况会删除所有满足条件的数据，{justOne:true}能达到只删除一条的效果
+
+mongodb的count方法
+	db.collection.find({条件}).count()
+	db.collection.count({})
+
+逻辑运算符
+	and {name:"a",age:10}
+	or {$or:[{},{}]}
+
+正则
+	db.collection.find({name:/^../})
+	db.collection.find({name:{$regex:"^.."}})
+
+limit和skip
+	limit()取多少个
+	skip跳过多少个
+	db.collection.skip(2).limit(3)
+
+排序
+	正序:db.collection.sort({name:1})
+	倒序:db.collection.sort({name:-1})
+
+去重
+	db.collection.distinct("字段名"，{})
+
+mongodb的投影
+	投影:选择返回结果的字段
+	db.collection.find({条件},{name:1,_id:0})
+	1._id默认会显示，置为0不显示
+	2.出了_id之外的其他字段，如果不显示，不写，不能写为0
+聚合:
+
+    $group的注意点
+	$group对应的字典中有几个键，结果中就有几个键
+	分组依据需要放到_id后面
+	取不同的字段的值需要使用$,$gender,$age
+	取字典嵌套的字典中的值的时候$_id.country
+	能够同时按照多个键进行分组{$group:{_id:{country:"$country",province:"$province"}}}
+	结果是：{_id:{country:"",province:""}
+
+    $match：过滤数据，只输出符合条件的文档
+    $project：修改输入文档的结构，如重命名、增加、删除字段、创建计算结果
+    $sort：将输入文档排序后输出-->db.stu.aggregate({$group:{_id:"$gender", count:{$sum:1}}},{$sort:{count:-1}})
+    $limit：限制聚合管道返回的文档数
+    $skip：跳过指定数量的文档，并返回余下的文档
+    $unwind：将数组类型的字段进行拆分
+
+
+按照gender进行分组，获取不同组数据的个数和平均年龄
+	db.stu.aggregate( {$group:{_id:"$gender",count:{$sum:1},avgage:{$avg:"$age"}}}, 
+			  {$project:{gender:"$_id",count:1,avgage:"$avgage",_id:0}} )
+
+按照hometown进行分组，获取不同组的平均年龄
+	db.stu.aggregate( {$group:{_id:"$hometown",meanage:{$avg:"$age"}}} )
+
+使用$group统计整个文档
+	db.stu.aggregate( {$group:{_id:null,count:{$sum:1},meanage:{$avg:"$age"}}} )
+
+选择年龄大于20的学生，观察男性和女性有多少人
+	db.stu.aggregate( {$match:{$or:[{age:{$gt:20}},{hometown:{$in:["蒙古","?理"]}}]}}, 
+			  {$group:{_id:"$gender",count:{$sum:1}}}, {$project:{id:0,gender:"$_id",count:1}} )
+
+page37页练习
+	db.tv3.aggregate( {$group:{_id:{country:"$country",province:"$province",userid:"$userid"}}}, 
+			  {$group:{_id:{country:"$id.country",province:"$id.province"},count:{$sum:1}}}, 
+			  {$project:{country:"$_id.country",province:"$id.province",count:1,_id:0}} )
+
+索引(mongodb也支持索引，以提升查询速度)
+
+	1.执行如下代码，向集合中插入10万条文档
+	for(i=0;i<100000;i++){
+    		db.t1.insert({name:'test'+i,age:i})
+	}
+	
+	2.创建索引
+		1表示升序，-1表示降序
+		db.集合.ensureIndex({属性:1})
+
+	3.执行上面的同样的查询，并进行查询性能分析
+		db.t1.find({name:'test10000'}).explain('executionStats')
+		explain可以查看查询耗时
+
+	4.建立唯一索引，实现唯一约束的功能
+		db.t1.ensureIndex({"name":1},{"unique":true})
+
+	5.查看文档所有索引
+		db.t1.getIndexes()
+
+	6.删除索引
+		db.t1.dropIndexes('索引名称')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
